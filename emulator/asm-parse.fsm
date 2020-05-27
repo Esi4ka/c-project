@@ -1,0 +1,642 @@
+$$#include "instrtbl.h"
+$$ extern int defnumberbase;
+$prefix	asm_parse
+$trace	asm_trace
+$anyof	symbegin	$.ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz
+$anyof	symchar		$.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz
+$anyof	decimaldigit	0123456789
+$anyof	firstdigit	0123456789
+$anyof	anydigit	0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+$state
+$tran		$lambda->false_if			?in_false_if
+$tran		$eos->$exit
+$tran		';'->comment
+$tran		!cond_pseudo->wantcomment
+$tran		!assignment->wantcomment
+$tran		$lambda
+$state
+$tran		!label
+$tran		$lambda
+$state
+$tran		';'->comment
+$tran		$eos->$exit
+$tran		!pseudo_op->wantcomment
+$tran		!symbol					?valid_opcode
+$state
+$tran		$lambda->op_none			?instr_ops(OPS_NONE)
+$tran		$lambda->op_g0				?instr_ops(OPS_G0)
+$tran		$lambda->op_r0				?instr_ops(OPS_R0)
+$tran		$lambda->op_o30				?instr_ops(OPS_O30)
+$tran		$lambda->op_b80				?instr_ops(OPS_B80)
+$tran		$lambda->op_r6_g0			?instr_ops(OPS_R6_G0)
+$tran		$lambda->op_g0_r6			?instr_ops(OPS_G0_R6)
+$tran		$lambda->op_g6_g0			?instr_ops(OPS_G6_G0)
+$tran		$lambda->op_r6_b60			?instr_ops(OPS_R6_B60)
+$tran		$lambda->op_o80				?instr_ops(OPS_O80)
+$tran		$lambda->op_o60				?instr_ops(OPS_O60)
+$tran		$lambda->op_f0				?instr_ops(OPS_F0)
+$tran		$lambda->op_fa6_f0			?instr_ops(OPS_FA6_F0)
+$tran		$lambda->op_f0_fa6			?instr_ops(OPS_F0_FA6)
+$tran		$lambda->op_fa6_g0			?instr_ops(OPS_FA6_G0)
+$tran		$lambda->op_g0_fa6			?instr_ops(OPS_G0_FA6)
+$tran		$lambda->op_d0				?instr_ops(OPS_D0)
+$tran		$lambda->op_fa6_d0			?instr_ops(OPS_FA6_D0)
+$tran		$lambda->op_d0_fa6			?instr_ops(OPS_D0_FA6)
+$state	op_none
+$tran		$lambda->wantcomment			last_operand
+$state	op_g0
+$tran		!genop->wantcomment			last_operand
+$state	op_r0
+$tran		!register->wantcomment			last_operand
+$state	op_o30
+$tran		!expression->wantcomment		last_operand
+$state	op_b80
+$tran		!expression->wantcomment		last_operand
+$state	op_r6_g0
+$tran		!register				first_operand
+$state
+$tran		','
+$state
+$tran		!genop->wantcomment			last_operand
+$state	op_g0_r6
+$tran		!genop					first_operand
+$state
+$tran		','
+$state
+$tran		!register->wantcomment			last_operand
+$state	op_g6_g0
+$tran		!genop					first_operand
+$state
+$tran		','
+$state
+$tran		!genop->wantcomment			last_operand
+$state	op_r6_b60
+$tran		!register				first_operand
+$state
+$tran		','
+$state
+$tran		!expression->wantcomment		last_operand
+$state	op_o80
+$tran		!expression->wantcomment		last_operand
+$state	op_o60
+$tran		!expression->wantcomment		last_operand
+$state	op_f0
+$tran		$lambda					set_float_size(0)
+$state
+$tran		!fgenop->wantcomment			last_operand
+$state	op_fa6_f0
+$tran		$lambda					set_float_size(0)
+$state
+$tran		!fregister				first_operand
+$state
+$tran		','
+$state
+$tran		!fgenop->wantcomment			last_operand
+$state	op_f0_fa6
+$tran		$lambda					set_float_size(0)
+$state
+$tran		!fgenop					first_operand
+$state
+$tran		','
+$state
+$tran		!fregister->wantcomment			last_operand
+$state	op_fa6_g0
+$tran		!fregister				first_operand
+$state
+$tran		','
+$state
+$tran		!genop->wantcomment			last_operand
+$state	op_g0_fa6
+$tran		!genop					first_operand
+$state
+$tran		','
+$state
+$tran		!fregister->wantcomment			last_operand
+$state	op_d0
+$tran		$lambda					set_float_size(1)
+$state
+$tran		!fgenop->wantcomment			last_operand
+$state	op_fa6_d0
+$tran		$lambda					set_float_size(1)
+$state
+$tran		!fregister				first_operand
+$state
+$tran		','
+$state
+$tran		!fgenop->wantcomment			last_operand
+$state	op_d0_fa6
+$tran		$lambda					set_float_size(1)
+$state
+$tran		!fgenop					first_operand
+$state
+$tran		','
+$state
+$tran		!fregister->wantcomment			last_operand
+$state	genop
+$tran		!autodecdef->$exit			op_mode(5)
+$tran		!autoincdef->$exit			op_mode(3)
+$tran		!autodec->$exit				op_mode(4)
+$tran		!autoinc->$exit				op_mode(2)
+$tran		!register_ind->$exit			op_mode(1)
+$tran		!immediatedef->$exit			pc_mode(3)
+$tran		!immediate->$exit			pc_mode(2)
+$tran		!indexdef->$exit			op_mode(7)
+$tran		!register->$exit			op_mode(0)
+$tran		!pcreldef->$exit			pc_mode(7)
+$tran		!index->$exit				op_mode(6)
+$tran		!pcrel->$exit				pc_mode(6)
+$state	register
+$tran		!symbol->$exit				?set_regno
+$state	register_ind
+$tran		'('
+$state
+$tran		!register
+$state
+$tran		')'->$exit
+$state	autoinc
+$tran		'('
+$state
+$tran		!register
+$state
+$tran		')'
+$state
+$tran		'+'->$exit
+$state	immediate
+$tran		'#'
+$state
+$tran		!expression->$exit
+$state	autoincdef
+$tran		'@'
+$state
+$tran		'('
+$state
+$tran		!register
+$state
+$tran		')'
+$state
+$tran		'+'->$exit
+$state	immediatedef
+$tran		'@'
+$state
+$tran		'#'
+$state
+$tran		!expression->$exit
+$state	autodec
+$tran		'-'
+$state
+$tran		'('
+$state
+$tran		!register
+$state
+$tran		')'->$exit
+$state	autodecdef
+$tran		'@'
+$state
+$tran		'-'
+$state
+$tran		'('
+$state
+$tran		!register
+$state
+$tran		')'->$exit
+$state	index
+$tran		!expression
+$state
+$tran		'('
+$tran		$lambda->$fail				pop_value
+$state
+$tran		!register
+$tran		$lambda->$fail				pop_value
+$state
+$tran		')'->$exit
+$tran		$lambda->$fail				pop_value
+$state	pcrel
+$tran		!expression->$exit
+$state	indexdef
+$tran		'@'
+$state
+$tran		!expression
+$state
+$tran		'('
+$tran		$lambda->$fail				pop_value
+$state
+$tran		!register
+$tran		$lambda->$fail				pop_value
+$state
+$tran		')'->$exit
+$tran		$lambda->$fail				pop_value
+$state	pcreldef
+$tran		'@'
+$state
+$tran		!expression->$exit
+$state	fgenop
+$tran		!autodecdef->$exit			op_mode(5)
+$tran		!autoincdef->$exit			op_mode(3)
+$tran		!autodec->$exit				op_mode(4)
+$tran		!autoinc->$exit				op_mode(2)
+$tran		!register_ind->$exit			op_mode(1)
+$tran		!immediatedef->$exit			pc_mode(3)
+$tran		!immediate->$exit			pc_mode(2)
+$tran		!indexdef->$exit			op_mode(7)
+$tran		!fregister->$exit			op_mode(0)
+$tran		!pcreldef->$exit			pc_mode(7)
+$tran		!index->$exit				op_mode(6)
+$tran		!pcrel->$exit				pc_mode(6)
+$state	fregister
+$tran		!symbol->$exit				?set_fregno
+$state	false_if
+$tran		!cond_pseudo->comment
+$tran		$lambda->comment
+$state	cond_pseudo
+$tran		'.'
+$state
+$tran		!lcsym
+$state
+$tran		"iftf"->$exit				psop_iftf
+$tran		"ift"->$exit				psop_ift
+$tran		"iff"->$exit				psop_iff
+$tran		"if"->__if
+$tran		"endc"->$exit				psop_endc
+$tran		"endif"->$exit				psop_endc
+$state	__if
+$tran		!lcsym
+$state
+$tran		"eq"->__if_expr				psop_if_eq
+$tran		"ne"->__if_expr				psop_if_ne
+$tran		"gt"->__if_expr				psop_if_gt
+$tran		"ge"->__if_expr				psop_if_ge
+$tran		"le"->__if_expr				psop_if_le
+$tran		"lt"->__if_expr				psop_if_lt
+$tran		"df"->__if_sym				psop_if_df
+$tran		"ndf"->__if_sym				psop_if_ndf
+$state	__if_expr
+$tran		!expression->$exit			psop_doif
+$state	__if_sym
+$tran		!symbol->$exit				psop_doif
+$state	pseudo_op
+$tran		'.'
+$state
+$tran		!lcsym
+$state
+$tran		"ascii"->__ascii
+$tran		"asciz"->__asciz
+$tran		"even"->$exit				psop_even
+$tran		"odd"->$exit				psop_odd
+$tran		"align"->__align
+$tran		"space"->__blkb
+$tran		"blkb"->__blkb
+$tran		"blkw"->__blkw
+$tran		"byte"->__byte
+$tran		"word"->__word
+$tran		"long"->__long
+$tran		"quad"->__quad
+$tran		"float"->__float
+$tran		"double"->__double
+$tran		"list"->__list
+$tran		"include"->__include
+$tran		"end"->__end
+$tran		"db"->__byte
+$tran		"dd"->__double
+$tran		"df"->__float
+$tran		"dl"->__long
+$tran		"dq"->__quad
+$tran		"dw"->__word
+$state	__ascii
+$tran		$lambda					begin_blocked_bytes
+$state
+$tran		!__ascii_
+$state
+$tran		$lambda->$exit				end_blocked_bytes
+$state	__ascii_
+$tran		'<'->__ascii_code
+$tran		$eos->$exit
+$tran		$lambda					get_spaces
+$state
+$tran		$any->__ascii_string			set_ascii_term
+$state	__ascii_string
+$tran		$any					?psop_ascii_term
+$tran		$any->__ascii_string			psop_ascii_char
+$tran		$eos					warn_untermstring
+$state
+$tran		$lambda->__ascii_			skip_spaces
+$state	__ascii_code
+$tran		!expression
+$state
+$tran		'>'->__ascii_				psop_ascii_expr
+$tran		$lambda->$fail				pop_value
+$state	__asciz
+$tran		$lambda					begin_blocked_bytes
+$state
+$tran		!__ascii_
+$state
+$tran		$lambda					psop_ascii_null
+$state
+$tran		$lambda->$exit				end_blocked_bytes
+$state	__align
+$tran		!expression->$exit			psop_align
+$state	__blkb
+$tran		!expression->$exit			psop_space(1)
+$state	__blkw
+$tran		!expression->$exit			psop_space(2)
+$state	__byte
+$tran		!expression				psop_db
+$tran		$lambda->$exit	
+$state
+$tran		','->__byte
+$tran		$lambda->$exit	
+$state	__word
+$tran		!expression				psop_dw
+$tran		$lambda->$exit	
+$state
+$tran		','->__word
+$tran		$lambda->$exit	
+$state	__long
+$tran		!expression				psop_dl
+$tran		$lambda->$exit	
+$state
+$tran		','->__long
+$tran		$lambda->$exit	
+$state	__quad
+$tran		!expression				psop_dq
+$tran		$lambda->$exit	
+$state
+$tran		','->__quad
+$tran		$lambda->$exit	
+$state	__float
+$tran		!expression				psop_df
+$tran		$lambda->$exit	
+$state
+$tran		','->__float
+$tran		$lambda->$exit	
+$state	__double
+$tran		!expression				psop_dd
+$tran		$lambda->$exit	
+$state
+$tran		','->__double
+$tran		$lambda->$exit	
+$state	__list
+$tran		!lcsym
+$state
+$tran		"on"->$exit				psop_list_on
+$tran		"off"->$exit				psop_list_off
+$tran		"push"->__list_push			psop_list_push
+$tran		"pop"->$exit				psop_list_pop
+$state	__list_push
+$tran		!lcsym
+$state
+$tran		"on"->$exit				psop_list_on
+$tran		"off"->$exit				psop_list_off
+$tran		$lambda->$exit	
+$state	__include
+$tran		$any					psop_include_begin
+$state	__include_name
+$tran		$any->$exit				?psop_include_end
+$tran		$eos->$exit				psop_include_unterm
+$tran		$any->__include_name			psop_include_char
+$state	__end
+$tran		!expression->$exit			psop_end(1)
+$tran		$lambda->$exit				psop_end(0)
+$state	wantcomment
+$tran		';'->comment
+$tran		$eos->$exit
+$tran		$lambda->comment			warn_ignored
+$state	comment		/* check any changes against last transition for an assignment */
+$tran		$any->comment
+$tran		$eos->$exit
+$state	symbol
+$tran		$lambda					begin_symbol
+$state
+$tran		'\\'->symbol_quote
+$tran		$anyof symbegin ->symbol_char		symbol_char
+$state	symbol_char
+$tran		'\\'->symbol_quote
+$tran		$anyof symchar ->symbol_char		symbol_char
+$tran		$lambda->$exit				finish_symbol
+$state	symbol_quote
+$tran		$any->symbol_char			symbol_char
+$state	lcsym	/* this is a real hack - lowercase next symbol by bashing the input string */
+$tran		!lcsym_doit
+$tran		$lambda->$exit
+$state	lcsym_doit
+$tran		$anyof symbegin				set_lc_start
+$state
+$tran		$lambda					get_spaces
+$state	lcsym_char
+$tran		$anyof symchar ->lcsym_char
+$tran		$lambda					skip_spaces
+$state
+$tran		$lambda->$fail				do_lc
+$state	label
+$tran		!symbol
+$state
+$tran		':'->$exit				define_label
+$state	assignment
+$tran		!symbol
+$state
+$tran		"=="->assign_define			set_assign_sym
+$tran		'='->assign_var				set_assign_sym
+$state	assign_var
+$tran		!expression->wantcomment		do_assignment(0)
+$state	assign_define
+$tran		!expression->wantcomment		do_assignment(1)
+$state	expression
+$tran		!x1
+$state	x1seen
+$tran		!x0suf->x1seen
+$tran		$lambda->$exit
+$state	x0suf
+$tran		"||"					dyad_op_str
+$state
+$tran		!x1->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x1
+$tran		!x2
+$state	x2seen
+$tran		!x1suf->x2seen
+$tran		$lambda->$exit
+$state	x1suf
+$tran		"&&"					dyad_op_str
+$state
+$tran		!x2->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x2
+$tran		!x3
+$state	x3seen
+$tran		!x2suf->x3seen
+$tran		$lambda->$exit
+$state	x2suf
+$tran		'|'					dyad_op
+$state
+$tran		!x3->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x3
+$tran		!x4
+$state	x4seen
+$tran		!x3suf->x4seen
+$tran		$lambda->$exit
+$state	x3suf
+$tran		'^'					dyad_op
+$state
+$tran		!x4->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x4
+$tran		!x5
+$state	x5seen
+$tran		!x4suf->x5seen
+$tran		$lambda->$exit
+$state	x4suf
+$tran		'&'					dyad_op
+$state
+$tran		!x5->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x5
+$tran		!x6
+$state	x6seen
+$tran		!x5suf->x6seen
+$tran		$lambda->$exit
+$state	x5suf
+$tran		"=="					dyad_op_str
+$tran		"!="					dyad_op_str
+$state
+$tran		!x6->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x6
+$tran		!x7
+$state	x7seen
+$tran		!x6suf->x7seen
+$tran		$lambda->$exit
+$state	x6suf
+$tran		'<'					dyad_op
+$tran		'>'					dyad_op
+$tran		"<="					dyad_op_str
+$tran		">="					dyad_op_str
+$state
+$tran		!x7->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x7
+$tran		!x8
+$state	x8seen
+$tran		!x7suf->x8seen
+$tran		$lambda->$exit
+$state	x7suf
+$tran		"<<"					dyad_op_str
+$tran		">>"					dyad_op_str
+$state
+$tran		!x8->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x8
+$tran		!x9
+$state	x9seen
+$tran		!x8suf->x9seen
+$tran		$lambda->$exit
+$state	x8suf
+$tran		'+'					dyad_op
+$tran		'-'					dyad_op
+$state
+$tran		!x9->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x9
+$tran		!x10
+$state	x10seen
+$tran		!x9suf->x10seen
+$tran		$lambda->$exit
+$state	x9suf
+$tran		'*'					dyad_op
+$tran		'/'					dyad_op
+$tran		'%'					dyad_op
+$state
+$tran		!x10->$exit				combine_op
+$tran		$lambda->$fail				pop_op
+$state	x10
+$tran		'+'->x10suf
+$tran		'-'->x10suf				monad_op
+$tran		'~'->x10suf				monad_op
+$tran		'!'->x10suf				monad_op
+$tran		'`'->x10_special			get_spaces
+$tran		!parenexpr->$exit
+$state	x10suf
+$tran		!x10->$exit				combine_op
+$state	x10_special
+$tran		!lcsym /* calls skip_spaces */
+$state
+$tran		"fasi"->x10suf				monad_op_str
+$tran		"fix"->x10suf				monad_op_str
+$tran		"float"->x10suf				monad_op_str
+$tran		"iasf"->x10suf				monad_op_str
+$tran		"round"->x10suf				monad_op_str
+$tran		"trunc"->x10suf				monad_op_str
+$state	parenexpr
+$tran		'('
+$tran		!constant->$exit
+$tran		!symbol->$exit				symbol_value
+$state
+$tran		!expression
+$state
+$tran		')'->$exit
+$state	constant
+$tran		!char_const
+$tran		!based_number
+$tran		!float_number
+$tran		!dec_suf_number
+$tran		!prefixed_number
+$tran		!defbased_number
+$tran		$lambda->$fail				skip_spaces
+$state
+$tran		$lambda->$exit				?finish_number
+$state	char_const
+$tran		$lambda					init_number(256)
+$state
+$tran		'\''->one_char
+$tran		'"'->two_char
+$state	one_char
+$tran		$any->$exit				store_number_digit
+$state	two_char
+$tran		$any					store_number_digit
+$state
+$tran		$any->$exit				store_number_digit
+$state	based_number
+$tran		'{'					get_spaces
+$state
+$tran		$decimal				?init_number
+$state
+$tran		'}'->numdigits
+$state	float_number
+$tran		$lambda					init_number(0)
+$state	float_digits
+$tran		$anyof decimaldigit ->float_digits	store_number_digit
+$tran		'.'->float_digits			store_float_point
+$tran		'e'
+$tran		'E'
+$tran		'd'
+$tran		'D'
+$tran		$lambda->$exit				?float_noexp_ok
+$state
+$tran		$lambda					?have_a_digit
+$state
+$tran		'+'					set_float_exp_sign(1)
+$tran		'-'					set_float_exp_sign(-1)
+$tran		$lambda					set_float_exp_sign(1)
+$state
+$tran		$decimal->$exit				set_float_exp
+$state	dec_suf_number
+$tran		$lambda					init_number(10)
+$state
+$tran		!numdigits
+$state
+$tran		'.'->$exit
+$state	defbased_number
+$tran		$lambda->numdigits			init_number(defnumberbase)
+$state	prefixed_number
+$tran		$lambda					?prefixed_ok
+$state
+$tran		"0x"->numdigits_			init_number(16)
+$tran		"0X"->numdigits_			init_number(16)
+$tran		"0t"->numdigits_			init_number(10)
+$tran		"0T"->numdigits_			init_number(10)
+$tran		"0o"->numdigits_			init_number(8)
+$tran		"0O"->numdigits_			init_number(8)
+$state	numdigits
+$tran		$anyof firstdigit ->numdigits_		?store_number_digit
+$state	numdigits_
+$tran		$anyof anydigit ->numdigits_		?store_number_digit
+$tran		$lambda->$exit				?have_a_digit
