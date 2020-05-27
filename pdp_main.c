@@ -4,7 +4,7 @@
 #include <string.h>
 #include "pdp.h"
 
-
+byte mem[MEMSIZE];
 int TRACE = 0;
 
 void test_mem() {
