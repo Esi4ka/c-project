@@ -2,6 +2,7 @@
 #include "pdp.h"
 #include <stdlib.h>
 
+word reg[8];
 int N, Z, C;
 void set_NZ(word w){
 	if (w >> 15){
