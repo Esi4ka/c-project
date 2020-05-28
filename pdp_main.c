@@ -4,7 +4,10 @@
 #include <string.h>
 #include "pdp.h"
 
+
+word reg[8];
 byte mem[MEMSIZE];
+int bw;
 int TRACE = 0;
 
 void test_mem() {
@@ -47,15 +50,21 @@ void run();
 int main(int argc, char * argv[]) {
 	display_status = 0x80;
 	key_check(argc, argv);
-	test_mem();
-	load_file();
-	//mem_dump(4, 2);
+//	test_mem();
+	load_file(argc, argv);
 	run();
 	return 0; 
 }
 
 void b_write(Adress adr, byte b) { 
-	mem[adr] = b;
+	if (adr < 8){
+		if (b >> 7 == 1)
+			reg[adr] = 0xFF00 | b;
+		else
+			reg[adr] = 0x0000 | b;
+	}
+	else
+		mem[adr] = b;
 }
 
 byte b_read(Adress adr) {
@@ -63,26 +72,25 @@ byte b_read(Adress adr) {
 }
 
 void w_write(Adress adr, word w) {
-	mem[adr] = w;
-	mem[adr + 1] = w >> 8;
+	if (adr < 8) {
+        reg[adr] = w;
+    }
+    else {
+        mem[adr] = w;
+		mem[adr + 1] = w >> 8;
+    }
 }
 
 word w_read(Adress adr) {
-	word w = ((word)mem[adr+1]) << 8;
-	w = w | mem[adr];
-	return w;
-}
-
-void load_file() {
-	unsigned int adr_1;
-	unsigned int N;
-	while(scanf("%x%x", &adr_1, &N) == 2) {
-		for(unsigned i = 0; i < N; i++) {
-			unsigned int k;
-			scanf("%x", &k);
-			b_write(adr_1 + i, k);
-		}
+	word w;
+	if (adr < 8) {
+        w = reg[adr];
+    }
+    else {
+		w = ((word)mem[adr+1]) << 8;
+		w = w | mem[adr];
 	}
+	return w;
 }
 
 void mem_dump(Adress adr, word w) {
@@ -90,17 +98,17 @@ void mem_dump(Adress adr, word w) {
 		printf("%06o : %06o\n", adr + i, w_read(adr + i));
 	}
 }
-/*
+
 void load_file(int argc, char  * argv[]) {
-	FILE * fin =  fopen(argv[1], "r");
+	FILE * fin =  fopen(argv[argc -1], "rb");
 	unsigned int adr_1;
 	unsigned int N;
-	while(scanf("%x%x", &adr_1, &N) == 2) {
+	while(fscanf(fin, "%x%x", &adr_1, &N) == 2) {
 		for(unsigned i = 0; i < N; i++) {
 			unsigned int k;
-			scanf("%x", &k);
+			fscanf(fin, "%x", &k);
 			b_write(adr_1 + i, k);
 		}
 	}
+	fclose(fin);
 }
-*/
